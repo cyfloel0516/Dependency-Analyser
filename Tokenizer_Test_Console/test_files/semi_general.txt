@@ -1,0 +1,12 @@
+//line starts with PUNCTUATOR '#'
+    #include <iostream>;
+//line ends with PUNCTUATOR ¡°;¡±
+std::string = "###{{{}}}";
+//left brace
+class Test{
+public :
+	void testFunction(){};
+private:
+	int a = 1;
+//right brace
+}

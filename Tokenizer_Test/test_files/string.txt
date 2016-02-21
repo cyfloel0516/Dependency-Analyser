@@ -1,0 +1,2 @@
+std::string = "Normal, quotation: \"\'\", slash: \\, tab: \t, newline: \n, display escape: \\n\\t,  \
+another case.";
