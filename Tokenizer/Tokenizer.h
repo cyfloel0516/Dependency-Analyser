@@ -76,7 +76,7 @@ namespace Scanner {
 	};
 
 	class ConsumeState;
-
+	class Context;
 	// Tokenizer class to parse a stream and return a token in every get function invokation
 	class Toker
 	{
@@ -106,6 +106,7 @@ namespace Scanner {
 		//configurations
 		bool storeComments = true;
 		void applyConfig();
+		Context* _pContext;
 	};
 
 }

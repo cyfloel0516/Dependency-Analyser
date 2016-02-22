@@ -42,157 +42,154 @@ const std::string TOKEN_TYPES::PUNCTUATOR = "Punctuator";
 const std::string TOKEN_TYPES::ALPHANUM = "Alphanum";
 //--end--declaration of TOKEN_TYPES
 
+//--begin--delcaration of Consumer Context
+class Scanner::Context {
+public:
+	Context();
+	~Context();
+	//functions
+	bool isSpecialSingleChar(const char &c);
+	bool isSpecialSingleChar(const std::string &c);
+	bool isSpecialCharPair(const std::string &p);
+	void addSingleToken(const std::string& token);
+	void addDoubleToken(const std::string& token);
+	void replaceSingleToken(const std::vector<std::string>& tokens);
+	void replaceDoubleToken(const std::vector<std::string>& tokens);
+	std::vector<std::string> getSingleTokens();
+	std::vector<std::string> getDoubleTokens();
+
+	//Properties
+	Token token;
+	std::istream* _pIn;
+	int lineNumber;
+	int tokenIndex;
+	bool inDoubleQuotes;
+	bool inSingleQuotes;
+	int currChar;
+
+	//Consumer State
+	ConsumeState* _pState;
+	ConsumeState* _pEatCppComment;
+	ConsumeState* _pEatCComment;
+	ConsumeState* _pEatWhitespace;
+	ConsumeState* _pEatPunctuator;
+	ConsumeState* _pEatAlphanum;
+	ConsumeState* _pEatNewline;
+	ConsumeState* _pEatString;
+	ConsumeState* _pTerminate;
+	std::vector<std::string> singleTokens;
+	std::vector<std::string> doubleTokens;
+
+	void clear() {
+		currChar = char();
+		token.clear();
+		lineNumber = 0;
+		tokenIndex = 0;
+		_pIn = nullptr;
+		_pState = _pEatWhitespace;
+	}
+
+
+};
 /////////////////////////////////////////////////////////////////////
 // Private abstract class ConsumeState
 class Scanner::ConsumeState
 {
 public:
 	ConsumeState();
+	ConsumeState(Context* pContext);
 	virtual ~ConsumeState();
-	void attach(std::istream* pIn) { _pIn = pIn; }
+
+	void attach(std::istream* pIn) { _pContext->_pIn = pIn; }
+
 	virtual void eatChars() = 0;
+
 	void consumeChars() {
-		_pState->eatChars();
-		_pState->nextState();
+		_pContext->_pState->eatChars();
+		_pContext->_pState->nextState();
 	}
-	bool canRead() { return _pIn->good(); }
-	Token getTok() { return token; }
-	bool hasTok() { return !token.tokenType.empty(); }
+
+	bool canRead() { return _pContext->_pIn->good(); }
+	Token getTok() { return _pContext->token; }
+	bool hasTok() { return !_pContext->token.tokenType.empty(); }
 	ConsumeState* nextState();
-	void clear() {
-		token.clear();
-		_pState = _pEatWhitespace;
+
+	void setContext(Context* pContext) {
+		this->_pContext = pContext;
 	}
-
-	bool isSpecialSingleChar(const char &c);
-	bool isSpecialSingleChar(const std::string &c);
-	bool isSpecialCharPair(const std::string &p);
-
-	std::vector<std::string> getSingleTokens();
-	std::vector<std::string> getDoubleTokens();
-	void addSingleToken(const std::string& token);
-	void addDoubleToken(const std::string& token);
-	void replaceSingleToken(const std::vector<std::string>& tokens);
-	void replaceDoubleToken(const std::vector<std::string>& tokens);
-
 protected:
-	static std::vector<std::string> singleTokens;
-	static std::vector<std::string> doubleTokens;
-	static Token token;
-	static std::istream* _pIn;
-	static int currChar;
-	static ConsumeState* _pState;
-	static ConsumeState* _pEatCppComment;
-	static ConsumeState* _pEatCComment;
-	static ConsumeState* _pEatWhitespace;
-	static ConsumeState* _pEatPunctuator;
-	static ConsumeState* _pEatAlphanum;
-	static ConsumeState* _pEatNewline;
-	static ConsumeState* _pEatString;
-	static ConsumeState* _pTerminate;
-	
-	static int lineNumber;
-	static int tokenIndex;
-
-	static bool inDoubleQuotes;
-	static bool inSingleQuotes;
-
-	static bool first;
+	Context* _pContext;
 };
 
-//----< initialize static data members >-----------------------------
-Token ConsumeState::token;
-std::istream* ConsumeState::_pIn;
-int ConsumeState::currChar;
-bool ConsumeState::first = true;
-ConsumeState* ConsumeState::_pState = nullptr;
-ConsumeState* ConsumeState::_pEatCppComment = nullptr;
-ConsumeState* ConsumeState::_pEatCComment = nullptr;
-ConsumeState* ConsumeState::_pEatWhitespace = nullptr;
-ConsumeState* ConsumeState::_pEatPunctuator = nullptr;
-ConsumeState* ConsumeState::_pEatAlphanum = nullptr;
-ConsumeState* ConsumeState::_pEatNewline;
-ConsumeState* ConsumeState::_pEatString = nullptr;
-ConsumeState* ConsumeState::_pTerminate = nullptr;
-bool ConsumeState::inDoubleQuotes = false;
-bool ConsumeState::inSingleQuotes = false;
-int ConsumeState::lineNumber = 0;
-int ConsumeState::tokenIndex = 0;
-
-std::vector<std::string> ConsumeState::singleTokens = { "\"", "'", "<" , ">", "[", "]","{","}","(",")", ":", "=", "+", "-", "*", "/", "!" };
-std::vector<std::string> ConsumeState::doubleTokens = { "<<", ">>", "::", "==", "+=", "-=", "*=", "/=", "\n" };
-
 //Get special single tokens;
-std::vector<std::string> ConsumeState::getSingleTokens(){
+std::vector<std::string> Context::getSingleTokens(){
 	return std::vector<std::string>(singleTokens);
 }
 
 //Get special double tokens;
-std::vector<std::string> ConsumeState::getDoubleTokens() {
+std::vector<std::string> Context::getDoubleTokens() {
 	return std::vector<std::string>(doubleTokens);
 }
 
 //add a special single token;
-void ConsumeState::addSingleToken(const std::string& token) {
+void Context::addSingleToken(const std::string& token) {
 	singleTokens.push_back(token);
 }
 
 //add a special double token;
-void ConsumeState::addDoubleToken(const std::string& token) {
+void Context::addDoubleToken(const std::string& token) {
 	doubleTokens.push_back(token);
 }
 
 //replace special single token;
-void ConsumeState::replaceSingleToken(const std::vector<std::string>& tokens) {
+void Context::replaceSingleToken(const std::vector<std::string>& tokens) {
 	singleTokens = std::vector <std::string>(tokens);
 }
 
 //replace special double token;
-void ConsumeState::replaceDoubleToken(const std::vector<std::string>& tokens) {
+void Context::replaceDoubleToken(const std::vector<std::string>& tokens) {
 	doubleTokens = std::vector < std::string >(tokens);
 }
-
-
 
 //----< transition to next state >-----------------------------------
 ConsumeState* ConsumeState::nextState()
 {
-	int chNext = _pIn->peek();
-	if (currChar == EOF) {
-		_pState = _pTerminate;
-		return _pTerminate;
+	int chNext = _pContext->_pIn->peek();
+	if (_pContext->currChar == EOF) {
+		_pContext->_pState = _pContext->_pTerminate;
+		return _pContext->_pTerminate;
 	}
-	if ((inDoubleQuotes == true && currChar != '"') || (inSingleQuotes == true && currChar != '\'')) {
-		_pState = _pEatString;
-		return _pEatString;
+	if ((_pContext->inDoubleQuotes == true && _pContext->currChar != '"') || (_pContext->inSingleQuotes == true && _pContext->currChar != '\'')) {
+		_pContext->_pState = _pContext->_pEatString;
+		return _pContext->_pEatString;
 	}
-	if (std::isspace(currChar) && currChar != '\n'){
-		_pState = _pEatWhitespace;
-		return _pEatWhitespace;
+	if (std::isspace(_pContext->currChar) && _pContext->currChar != '\n'){
+		_pContext->_pState = _pContext->_pEatWhitespace;
+		return _pContext->_pEatWhitespace;
 	}
-	if (currChar == '/' && chNext == '/'){
-		_pState = _pEatCppComment;
-		return _pEatCppComment;
+	if (_pContext->currChar == '/' && chNext == '/'){
+		_pContext->_pState = _pContext->_pEatCppComment;
+		return _pContext->_pEatCppComment;
 	}
-	if (currChar == '*' && chNext == '/'){
-		_pState = _pEatCComment;
-		return _pEatCComment;
+	if (_pContext->currChar == '*' && chNext == '/'){
+		_pContext->_pState = _pContext->_pEatCComment;
+		return _pContext->_pEatCComment;
 	}
-	if (currChar == '/' && chNext == '*'){
-		_pState = _pEatCComment;
-		return _pEatCComment;
+	if (_pContext->currChar == '/' && chNext == '*'){
+		_pContext->_pState = _pContext->_pEatCComment;
+		return _pContext->_pEatCComment;
 	}
-	if (currChar == '\n'){
-		_pState = _pEatNewline;
-		return _pEatNewline;
+	if (_pContext->currChar == '\n'){
+		_pContext->_pState = _pContext->_pEatNewline;
+		return _pContext->_pEatNewline;
 	}
-	if (std::isalnum(currChar) || (currChar == '_' && !isSpecialSingleChar("_"))){
-		_pState = _pEatAlphanum;
-		return _pEatAlphanum;
+	if (std::isalnum(_pContext->currChar) || (_pContext->currChar == '_' && !_pContext->isSpecialSingleChar("_"))){
+		_pContext->_pState = _pContext->_pEatAlphanum;
+		return _pContext->_pEatAlphanum;
 	}
-	if (ispunct(currChar) && (currChar != '_' || (currChar == '_' && isSpecialSingleChar("_")))){
-		_pState = _pEatPunctuator;
-		return _pEatPunctuator;
+	if (ispunct(_pContext->currChar) && (_pContext->currChar != '_' || (_pContext->currChar == '_' && _pContext->isSpecialSingleChar("_")))){
+		_pContext->_pState = _pContext->_pEatPunctuator;
+		return _pContext->_pEatPunctuator;
 	}
 	throw(std::logic_error("invalid type"));
 }
@@ -200,22 +197,24 @@ ConsumeState* ConsumeState::nextState()
 // Derived state that consumes terminated and then stop state in terminated
 class EatWhitespace : public ConsumeState{
 public:
+	EatWhitespace(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars(){
-		token.clear();
+		_pContext->token.clear();
 		do {
-			if (!_pIn->good())  // end of stream
+			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			currChar = _pIn->get();
-		} while (std::isspace(currChar) && currChar != '\n');
+			_pContext->currChar = _pContext->_pIn->get();
+		} while (std::isspace(_pContext->currChar) && _pContext->currChar != '\n');
 	}
 };
 
-class Stateterminate : public ConsumeState{
+class StateTerminate : public ConsumeState{
 public:
+	StateTerminate(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars(){
-		token.clear();
-		if (currChar == EOF) {
-			token.tokenType = TOKEN_TYPES::TERMINATED;
+		_pContext->token.clear();
+		if (_pContext->currChar == EOF) {
+			_pContext->token.tokenType = TOKEN_TYPES::TERMINATED;
 		}
 	}
 };
@@ -227,47 +226,48 @@ Backup function for escape character
 */
 class EatString : public ConsumeState{
 public:
+	EatString(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = TOKEN_TYPES::STRING;
-		token.tokenIndex = tokenIndex++;
-		token.lineNumber = lineNumber;
+		_pContext->token.clear();
+		_pContext->token.tokenType = TOKEN_TYPES::STRING;
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
+		_pContext->token.lineNumber = _pContext->lineNumber;
 
-		char next = _pIn->peek();
+		char next = _pContext->_pIn->peek();
 		do {
 			std::string s = "  ";
-			_pIn->seekg(-1, ios_base::cur);
-			_pIn->read(&s[0], 2);
-			_pIn->seekg(-1, ios_base::cur);
+			_pContext->_pIn->seekg(-1, ios_base::cur);
+			_pContext->_pIn->read(&s[0], 2);
+			_pContext->_pIn->seekg(-1, ios_base::cur);
 			std::string whole = utils::escape(s);
 
 			// Deal with special characters for example """ and '''. 
-			if (currChar == '\\' && next == '\'' && inSingleQuotes) { // ' in ' '
-				token.tokenValue += '\'';
-				_pIn->get();
+			if (_pContext->currChar == '\\' && next == '\'' && _pContext->inSingleQuotes) { // ' in ' '
+				_pContext->token.tokenValue += '\'';
+				_pContext->_pIn->get();
 			}
-			else if (currChar == '\\' && next == '"' && inDoubleQuotes) { // " in " "
-				token.tokenValue += '"';
-				_pIn->get();
+			else if (_pContext->currChar == '\\' && next == '"' && _pContext->inDoubleQuotes) { // " in " "
+				_pContext->token.tokenValue += '"';
+				_pContext->_pIn->get();
 			}
-			else if (isSpecialSingleChar(whole)) {
-				token.tokenValue += whole;
-				_pIn->get();
-			}
-			else if (currChar == '\\') {	// Deal with new line in c++ source code
-				token.tokenValue += currChar;
-				token.tokenValue += _pIn->get();
+			/*else if (_pContext->isSpecialSingleChar(whole)) {
+				_pContext->token.tokenValue += whole;
+				_pContext->_pIn->get();
+			}*/
+			else if (_pContext->currChar == '\\') {	// Deal with new line in c++ source code
+				_pContext->token.tokenValue += _pContext->currChar;
+				_pContext->token.tokenValue += _pContext->_pIn->get();
 			}
 			else {
-				token.tokenValue += currChar;
+				_pContext->token.tokenValue += _pContext->currChar;
 			}
 
-			if (!_pIn->good())  // end of stream
+			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			currChar = _pIn->get();
-			next = _pIn->peek();
-		} while (currChar != '"' && currChar != '\'');
+			_pContext->currChar = _pContext->_pIn->get();
+			next = _pContext->_pIn->peek();
+		} while (_pContext->currChar != '"' && _pContext->currChar != '\'');
 	}
 };
 
@@ -275,221 +275,237 @@ public:
 class EatCppComment : public ConsumeState
 {
 public:
+	EatCppComment(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = "CppComment";
-		currChar = _pIn->get();
-		currChar = _pIn->get();
+		_pContext->token.clear();
+		_pContext->token.tokenType = "CppComment";
+		_pContext->currChar = _pContext->_pIn->get();
+		_pContext->currChar = _pContext->_pIn->get();
 
-		token.lineNumber = lineNumber;
-		token.tokenIndex = tokenIndex++;
+		_pContext->token.lineNumber = _pContext->lineNumber;
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
 
-		token.tokenValue += "//";
+		_pContext->token.tokenValue += "//";
 		//std::cout << "\n  eating C++ comment";
 		do {
-			token.tokenValue += currChar;
-			if (!_pIn->good())  // end of stream
+			_pContext->token.tokenValue += _pContext->currChar;
+			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			currChar = _pIn->get();
+			_pContext->currChar = _pContext->_pIn->get();
 
-		} while (currChar != '\n');
+		} while (_pContext->currChar != '\n');
 	}
 };
-
 
 // Consume C comment
 class EatCComment : public ConsumeState
 {
 public:
+	EatCComment(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = "CComment";
-		currChar = _pIn->get();
-		currChar = _pIn->get();
-		token.tokenValue += "/*";
-		token.tokenIndex = tokenIndex++;
+		_pContext->token.clear();
+		_pContext->token.tokenType = "CComment";
+		_pContext->currChar = _pContext->_pIn->get();
+		_pContext->currChar = _pContext->_pIn->get();
+		_pContext->token.tokenValue += "/*";
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
 		//std::cout << "\n  eating C comment";
 		do {
-			token.tokenValue += currChar;
-			if (!_pIn->good())  // end of stream
+			_pContext->token.tokenValue += _pContext->currChar;
+			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			currChar = _pIn->get();
-		} while (currChar != '*' || _pIn->peek() != '/');
-		_pIn->get();
-		token.tokenValue += "*/";
-		currChar = _pIn->get();
+			_pContext->currChar = _pContext->_pIn->get();
+		} while (_pContext->currChar != '*' || _pContext->_pIn->peek() != '/');
+		_pContext->_pIn->get();
+		_pContext->token.tokenValue += "*/";
+		_pContext->currChar = _pContext->_pIn->get();
 
-		size_t newlineCount = std::count(token.tokenValue.begin(), token.tokenValue.end(), '\n');
+		size_t newlineCount = std::count(_pContext->token.tokenValue.begin(), _pContext->token.tokenValue.end(), '\n');
 		if (newlineCount > 0) {
-			lineNumber += newlineCount;
-			tokenIndex = 0;
+			_pContext->lineNumber += newlineCount;
+			_pContext->tokenIndex = 0;
 		}
 	}
 };
+
 /////////////////////////////////////////////////////////////////////
 // Derived state that consumes punctuators and returns as token
 class EatPunctuator : public ConsumeState
 {
 public:
+	EatPunctuator(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = "Punctuator";
+		_pContext->token.clear();
+		_pContext->token.tokenType = "Punctuator";
 		std::string next = "";
 		std::string whole = "";
-		token.tokenIndex = tokenIndex++;
-		token.lineNumber = lineNumber;
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
+		_pContext->token.lineNumber = _pContext->lineNumber;
 
-		next = _pIn->peek();
-		whole = std::string(1, currChar) + next;
-		bool emptyToken = token.tokenValue.empty();
+		next = _pContext->_pIn->peek();
+		whole = std::string(1, _pContext->currChar) + next;
+		bool emptyToken = _pContext->token.tokenValue.empty();
 
-		if (std::find(doubleTokens.begin(), doubleTokens.end(), whole) != doubleTokens.end() && emptyToken) {
-			token.tokenValue = whole;
-			currChar = _pIn->get();
-			currChar = _pIn->get();
+		if (std::find(_pContext->doubleTokens.begin(), _pContext->doubleTokens.end(), whole) != _pContext->doubleTokens.end() && emptyToken) {
+			_pContext->token.tokenValue = whole;
+			_pContext->currChar = _pContext->_pIn->get();
+			_pContext->currChar = _pContext->_pIn->get();
 		}
-		else if (std::find(singleTokens.begin(), singleTokens.end(), std::string(1, currChar)) != singleTokens.end() && emptyToken) {
-			token.tokenValue = currChar;
-			currChar = _pIn->get();
+		else if (std::find(_pContext->singleTokens.begin(), _pContext->singleTokens.end(), std::string(1, _pContext->currChar)) != _pContext->singleTokens.end() && emptyToken) {
+			_pContext->token.tokenValue = _pContext->currChar;
+			_pContext->currChar = _pContext->_pIn->get();
 		}
 		else {
-			token.tokenValue += currChar;
-			currChar = _pIn->get();
+			_pContext->token.tokenValue += _pContext->currChar;
+			_pContext->currChar = _pContext->_pIn->get();
 		}
 
 		//Set variable when begin to deal with quated string
-		if (token.tokenValue == "\"" && inDoubleQuotes == false)
+		if (_pContext->token.tokenValue == "\"" && _pContext->inDoubleQuotes == false)
 		{
-			inDoubleQuotes = true;
+			_pContext->inDoubleQuotes = true;
 		}
-		else if (token.tokenValue == "'" && inSingleQuotes == false)
+		else if (_pContext->token.tokenValue == "'" && _pContext->inSingleQuotes == false)
 		{
-			inSingleQuotes = true;
+			_pContext->inSingleQuotes = true;
 		}
-		else if (token.tokenValue == "\"" && inDoubleQuotes == true)
+		else if (_pContext->token.tokenValue == "\"" && _pContext->inDoubleQuotes == true)
 		{
-			inDoubleQuotes = false;
+			_pContext->inDoubleQuotes = false;
 		}
-		else if (token.tokenValue == "'" && inSingleQuotes == true)
+		else if (_pContext->token.tokenValue == "'" && _pContext->inSingleQuotes == true)
 		{
-			inSingleQuotes = false;
+			_pContext->inSingleQuotes = false;
 		}
 
-		_pState = nextState();
+		_pContext->_pState = nextState();
 	}
 };
+
 /////////////////////////////////////////////////////////////////////
 // Derived state that consumes alphanumerics and returns as token
 class EatAlphanum : public ConsumeState
 {
 public:
+	EatAlphanum(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = "Alphanum";
-		token.tokenIndex = tokenIndex++;
-		token.lineNumber = lineNumber;
+		_pContext->token.clear();
+		_pContext->token.tokenType = "Alphanum";
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
+		_pContext->token.lineNumber = _pContext->lineNumber;
 
 		do {
-			if (token.tokenValue == "1234") {
+			if (_pContext->token.tokenValue == "1234") {
 				char a = 1;
 			}
-			if (currChar == '\\') {
-				token.tokenValue += currChar + _pIn->get();
+			if (_pContext->currChar == '\\') {
+				_pContext->token.tokenValue += _pContext->currChar + _pContext->_pIn->get();
 			}
 			else {
-				token.tokenValue += currChar;
+				_pContext->token.tokenValue += _pContext->currChar;
 			}
-			if (!_pIn->good())  // end of stream
+			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			currChar = _pIn->get();
-		} while (isalnum(currChar) || currChar == '\\' || currChar == '_');
-		_pState = nextState();
+			_pContext->currChar = _pContext->_pIn->get();
+		} while (isalnum(_pContext->currChar) || _pContext->currChar == '\\' || _pContext->currChar == '_');
+		_pContext->_pState = nextState();
 	}
 };
+
 /////////////////////////////////////////////////////////////////////
 // Derived state that consumes newline and returns as single
 // character token.
 class EatNewline : public ConsumeState
 {
 public:
+	EatNewline(Context* pContext) { this->_pContext = pContext; };
 	virtual void eatChars()
 	{
-		token.clear();
-		token.tokenType = TOKEN_TYPES::NEWLINE;
-		token.tokenValue = "\n";
-		token.tokenIndex = tokenIndex++;
-		token.lineNumber = lineNumber;
+		_pContext->token.clear();
+		_pContext->token.tokenType = TOKEN_TYPES::NEWLINE;
+		_pContext->token.tokenValue = "\n";
+		_pContext->token.tokenIndex = _pContext->tokenIndex++;
+		_pContext->token.lineNumber = _pContext->lineNumber;
 
-		currChar = _pIn->get();
-		if (!_pIn->good())  // end of stream
+		_pContext->currChar = _pContext->_pIn->get();
+		if (!_pContext->_pIn->good())  // end of stream
 			return;
 
-		lineNumber++;
-		tokenIndex = 0;
+		_pContext->lineNumber++;
+		_pContext->tokenIndex = 0;
 	}
 };
 
 //----< base class member function to create derived states >--------
-ConsumeState::ConsumeState()
-{
-	if (first)
-	{
-		first = false;
-		_pEatAlphanum = new EatAlphanum();
-		_pEatCComment = new EatCComment();
-		_pEatCppComment = new EatCppComment();
-		_pEatPunctuator = new EatPunctuator();
-		_pEatWhitespace = new EatWhitespace();
-		_pEatNewline = new EatNewline();
-		_pEatString = new EatString();
-		_pTerminate = new Stateterminate();
-		_pState = _pEatWhitespace;
-	}
-}
+ConsumeState::ConsumeState(){ }
+
+//----< base class member function to create derived states >--------
+ConsumeState::ConsumeState(Context* pContext) { this->_pContext = pContext; }
 
 //Deconstruct
-ConsumeState::~ConsumeState()
-{
-	if (!first)
-	{
-		first = true;
-		delete _pEatAlphanum;
-		delete _pEatCComment;
-		delete _pEatCppComment;
-		delete _pEatPunctuator;
-		delete _pEatWhitespace;
-		delete _pEatNewline;
-		delete _pEatString;
-	}
+ConsumeState::~ConsumeState(){ }
+
+Context::Context() {
+	_pEatCppComment = new EatCppComment(this);
+	_pEatCComment = new EatCComment(this);
+	_pEatWhitespace = new EatWhitespace(this);
+	_pEatPunctuator = new EatPunctuator(this);
+	_pEatAlphanum = new EatAlphanum(this);
+	_pEatNewline = new EatNewline(this);
+	_pEatString = new EatString(this);
+	_pTerminate = new StateTerminate(this);
+	_pState = _pEatWhitespace;
+
+	inDoubleQuotes = false;
+	inSingleQuotes = false;
+	lineNumber = 0;
+	tokenIndex = 0;
+	singleTokens = { "\"", "'", "<" , ">", "[", "]","{","}","(",")", ":", "=", "+", "-", "*", "/", "!" };
+	doubleTokens = { "<<", ">>", "::", "==", "+=", "-=", "*=", "/=", "\n" };
+}
+
+Context::~Context() {
+	delete _pEatCppComment;
+	delete _pEatCComment;
+	delete _pEatWhitespace;
+	delete _pEatPunctuator;
+	delete _pEatAlphanum;
+	delete _pEatNewline;
+	delete _pEatString;
+	delete _pTerminate;
 }
 
 // Determine if a string is a special single characters
-bool ConsumeState::isSpecialSingleChar(const char&c) {
+bool Context::isSpecialSingleChar(const char&c) {
 	auto s = to_string(c);
 	return isSpecialCharPair(s);
 }
 
 // Determine if a string is a special single characters
-bool ConsumeState::isSpecialSingleChar(const string &c) {
+bool Context::isSpecialSingleChar(const string &c) {
 	return singleTokens.end() != std::find(singleTokens.begin(), singleTokens.end(), c);
 }
 
 // Determine if a string is a special double characters
-bool ConsumeState::isSpecialCharPair(const string &s) {
+bool Context::isSpecialCharPair(const string &s) {
 	return doubleTokens.end() != std::find(doubleTokens.begin(), doubleTokens.end(), s);
 
 }
 //----< initialize the toker to start with EatWhitespace >-----------
-Toker::Toker() : pConsumer(new EatWhitespace()) {
+Toker::Toker(){
+	_pContext = new Context();
+	pConsumer = _pContext->_pEatWhitespace;
 	applyConfig();
 }
 
 // Deconstruct
-Toker::~Toker() { delete pConsumer; }
+Toker::~Toker() { 
+	delete _pContext;
+}
 
 // Read configuration from file and intialize the configure items
 void Toker::applyConfig() {
@@ -520,8 +536,8 @@ bool Toker::attach(std::istream* pIn)
 {
 	if (pIn != nullptr && pIn->good())
 	{
-		pConsumer->attach(pIn);
-		pConsumer = new EatWhitespace();
+		_pContext->_pIn = pIn;
+		pConsumer = _pContext->_pEatWhitespace;
 		return true;
 	}
 	return false;
@@ -563,14 +579,14 @@ void Toker::setSpecialSingleChars(const std::vector<std::string> chars, bool rep
 	}
 	
 	if (replace) {
-		pConsumer->replaceSingleToken(copyChars);
+		_pContext->replaceSingleToken(copyChars);
 	}
 	else {
 		for (auto it = copyChars.begin(); it != copyChars.end(); it++) {
 			std::string s = *it;
-			auto nowTokens = pConsumer->getSingleTokens();
+			auto nowTokens = _pContext->getSingleTokens();
 			if (nowTokens.end() == std::find(nowTokens.begin(), nowTokens.end(), s) ) {
-				pConsumer->addSingleToken(s);
+				_pContext->addSingleToken(s);
 			}
 		}
 	}
@@ -589,14 +605,14 @@ void Toker::setSpecialCharPairs(const std::vector<std::string> chars, bool repla
 		}
 	}
 	if (replace) {
-		pConsumer->replaceDoubleToken(copyChars);
+		_pContext->replaceDoubleToken(copyChars);
 	}
 	else {
 		for (auto it = copyChars.begin(); it != copyChars.end(); it++) {
 			std::string s = *it;
-			auto nowTokens = pConsumer->getSingleTokens();
+			auto nowTokens = _pContext->getSingleTokens();
 			if (nowTokens.end() == std::find(nowTokens.begin(), nowTokens.end(), s)) {
-				pConsumer->addDoubleToken(s);
+				_pContext->addDoubleToken(s);
 			}
 		}
 	}
@@ -604,17 +620,17 @@ void Toker::setSpecialCharPairs(const std::vector<std::string> chars, bool repla
 
 // Clear current pConsumer state to enable another file to attach and parse
 void Toker::clear() {
-	pConsumer = new EatWhitespace();
+	_pContext->clear();
 }
 
 // Get special single characters
 std::vector<std::string> Toker::getSpecialSingleChars() {
-	return std::vector<std::string>(pConsumer->getSingleTokens());
+	return std::vector<std::string>(_pContext->getSingleTokens());
 }
 
 // Get special double characters
 std::vector<std::string> Toker::getSpecialCharPairs() {
-	return std::vector<std::string>(pConsumer->getDoubleTokens());
+	return std::vector<std::string>(_pContext->getDoubleTokens());
 }
 
 

@@ -32,7 +32,7 @@ void printFile(std::istream* s) {
 }
 
 //print tokens of a stream from a file
-void printTokenizerTest(std::istream* in, Toker toker = Toker()) {
+void printTokenizerTest(std::istream* in, Toker& toker = Toker()) {
 	if (!in->good())
 	{
 		return;
