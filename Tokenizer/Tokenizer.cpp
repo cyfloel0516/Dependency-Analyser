@@ -66,6 +66,7 @@ public:
 	bool inDoubleQuotes;
 	bool inSingleQuotes;
 	int currChar;
+	int prevChar;
 
 	//Consumer State
 	ConsumeState* _pState;
@@ -104,6 +105,7 @@ public:
 
 	virtual void eatChars() = 0;
 
+	bool collectChar();
 	void consumeChars() {
 		_pContext->_pState->eatChars();
 		_pContext->_pState->nextState();
@@ -120,7 +122,24 @@ public:
 protected:
 	Context* _pContext;
 };
-
+bool Scanner::ConsumeState::collectChar() {
+	if (_pContext->_pIn->good())
+	{
+		_pContext->prevChar = _pContext->currChar;
+		_pContext->currChar = _pContext->_pIn->get();
+		if (_pContext->currChar == '\n')
+		{ 
+			++(_pContext->lineNumber);
+			_pContext->tokenIndex = 0;
+		}
+		return true;
+	}
+	else {
+		_pContext->prevChar = _pContext->currChar;
+		_pContext->currChar = EOF;
+		return false;
+	}
+}
 //Get special single tokens;
 std::vector<std::string> Context::getSingleTokens(){
 	return std::vector<std::string>(singleTokens);
@@ -201,9 +220,8 @@ public:
 	virtual void eatChars(){
 		_pContext->token.clear();
 		do {
-			if (!_pContext->_pIn->good())  // end of stream
+			if (!collectChar())  // end of stream
 				return;
-			_pContext->currChar = _pContext->_pIn->get();
 		} while (std::isspace(_pContext->currChar) && _pContext->currChar != '\n');
 	}
 };
@@ -257,7 +275,8 @@ public:
 			}*/
 			else if (_pContext->currChar == '\\') {	// Deal with new line in c++ source code
 				_pContext->token.tokenValue += _pContext->currChar;
-				_pContext->token.tokenValue += _pContext->_pIn->get();
+				collectChar();
+				_pContext->token.tokenValue += _pContext->currChar;
 			}
 			else {
 				_pContext->token.tokenValue += _pContext->currChar;
@@ -280,20 +299,15 @@ public:
 	{
 		_pContext->token.clear();
 		_pContext->token.tokenType = "CppComment";
-		_pContext->currChar = _pContext->_pIn->get();
-		_pContext->currChar = _pContext->_pIn->get();
-
-		_pContext->token.lineNumber = _pContext->lineNumber;
+		collectChar();
+		collectChar();
 		_pContext->token.tokenIndex = _pContext->tokenIndex++;
-
 		_pContext->token.tokenValue += "//";
 		//std::cout << "\n  eating C++ comment";
 		do {
 			_pContext->token.tokenValue += _pContext->currChar;
-			if (!_pContext->_pIn->good())  // end of stream
+			if (!collectChar())  // end of stream
 				return;
-			_pContext->currChar = _pContext->_pIn->get();
-
 		} while (_pContext->currChar != '\n');
 	}
 };
@@ -307,26 +321,19 @@ public:
 	{
 		_pContext->token.clear();
 		_pContext->token.tokenType = "CComment";
-		_pContext->currChar = _pContext->_pIn->get();
-		_pContext->currChar = _pContext->_pIn->get();
+		collectChar();
+		collectChar();
 		_pContext->token.tokenValue += "/*";
 		_pContext->token.tokenIndex = _pContext->tokenIndex++;
 		//std::cout << "\n  eating C comment";
 		do {
 			_pContext->token.tokenValue += _pContext->currChar;
-			if (!_pContext->_pIn->good())  // end of stream
+			if (!collectChar())  // end of stream
 				return;
-			_pContext->currChar = _pContext->_pIn->get();
 		} while (_pContext->currChar != '*' || _pContext->_pIn->peek() != '/');
-		_pContext->_pIn->get();
 		_pContext->token.tokenValue += "*/";
-		_pContext->currChar = _pContext->_pIn->get();
-
-		size_t newlineCount = std::count(_pContext->token.tokenValue.begin(), _pContext->token.tokenValue.end(), '\n');
-		if (newlineCount > 0) {
-			_pContext->lineNumber += newlineCount;
-			_pContext->tokenIndex = 0;
-		}
+		collectChar();
+		collectChar();
 	}
 };
 
@@ -349,18 +356,19 @@ public:
 		whole = std::string(1, _pContext->currChar) + next;
 		bool emptyToken = _pContext->token.tokenValue.empty();
 
+		//Is two char special 
 		if (std::find(_pContext->doubleTokens.begin(), _pContext->doubleTokens.end(), whole) != _pContext->doubleTokens.end() && emptyToken) {
 			_pContext->token.tokenValue = whole;
-			_pContext->currChar = _pContext->_pIn->get();
-			_pContext->currChar = _pContext->_pIn->get();
+			collectChar();
+			collectChar();
 		}
 		else if (std::find(_pContext->singleTokens.begin(), _pContext->singleTokens.end(), std::string(1, _pContext->currChar)) != _pContext->singleTokens.end() && emptyToken) {
 			_pContext->token.tokenValue = _pContext->currChar;
-			_pContext->currChar = _pContext->_pIn->get();
+			collectChar();
 		}
 		else {
 			_pContext->token.tokenValue += _pContext->currChar;
-			_pContext->currChar = _pContext->_pIn->get();
+			collectChar();
 		}
 
 		//Set variable when begin to deal with quated string
@@ -380,8 +388,6 @@ public:
 		{
 			_pContext->inSingleQuotes = false;
 		}
-
-		_pContext->_pState = nextState();
 	}
 };
 
@@ -399,19 +405,10 @@ public:
 		_pContext->token.lineNumber = _pContext->lineNumber;
 
 		do {
-			if (_pContext->token.tokenValue == "1234") {
-				char a = 1;
-			}
-			if (_pContext->currChar == '\\') {
-				_pContext->token.tokenValue += _pContext->currChar + _pContext->_pIn->get();
-			}
-			else {
-				_pContext->token.tokenValue += _pContext->currChar;
-			}
-			if (!_pContext->_pIn->good())  // end of stream
+			_pContext->token.tokenValue += _pContext->currChar;
+			if (!this->collectChar())  // end of stream
 				return;
-			_pContext->currChar = _pContext->_pIn->get();
-		} while (isalnum(_pContext->currChar) || _pContext->currChar == '\\' || _pContext->currChar == '_');
+		} while (isalnum(_pContext->currChar) || _pContext->currChar == '_');
 		_pContext->_pState = nextState();
 	}
 };
@@ -428,15 +425,10 @@ public:
 		_pContext->token.clear();
 		_pContext->token.tokenType = TOKEN_TYPES::NEWLINE;
 		_pContext->token.tokenValue = "\n";
-		_pContext->token.tokenIndex = _pContext->tokenIndex++;
+		//_pContext->token.tokenIndex = _pContext->tokenIndex++;
 		_pContext->token.lineNumber = _pContext->lineNumber;
-
-		_pContext->currChar = _pContext->_pIn->get();
-		if (!_pContext->_pIn->good())  // end of stream
+		if (!collectChar())  // end of stream
 			return;
-
-		_pContext->lineNumber++;
-		_pContext->tokenIndex = 0;
 	}
 };
 
