@@ -67,6 +67,7 @@ public:
 	bool inSingleQuotes;
 	int currChar;
 	int prevChar;
+	bool _returnComment = false;
 
 	//Consumer State
 	ConsumeState* _pState;
@@ -84,8 +85,8 @@ public:
 	void clear() {
 		currChar = char();
 		token.clear();
-		lineNumber = 0;
-		tokenIndex = 0;
+		lineNumber = 1;
+		tokenIndex = 1;
 		_pIn = nullptr;
 		_pState = _pEatWhitespace;
 	}
@@ -298,7 +299,12 @@ public:
 	virtual void eatChars()
 	{
 		_pContext->token.clear();
-		_pContext->token.tokenType = "CppComment";
+		if (_pContext->_returnComment) {
+			_pContext->token.tokenType = "CppComment";
+		}
+		else {
+			_pContext->token.tokenType = "";
+		}
 		collectChar();
 		collectChar();
 		_pContext->token.tokenIndex = _pContext->tokenIndex++;
@@ -320,7 +326,12 @@ public:
 	virtual void eatChars()
 	{
 		_pContext->token.clear();
-		_pContext->token.tokenType = "CComment";
+		if (_pContext->_returnComment) {
+			_pContext->token.tokenType = "CComment";
+		}
+		else {
+			_pContext->token.tokenType = "";
+		}
 		collectChar();
 		collectChar();
 		_pContext->token.tokenValue += "/*";
@@ -454,8 +465,8 @@ Context::Context() {
 
 	inDoubleQuotes = false;
 	inSingleQuotes = false;
-	lineNumber = 0;
-	tokenIndex = 0;
+	lineNumber = 1;
+	tokenIndex = 1;
 	singleTokens = { "\"", "'", "<" , ">", "[", "]","{","}","(",")", ":", "=", "+", "-", "*", "/", "!" };
 	doubleTokens = { "<<", ">>", "::", "==", "+=", "-=", "*=", "/=", "\n" };
 }
@@ -499,6 +510,10 @@ Toker::~Toker() {
 	delete _pContext;
 }
 
+void Toker::returnComments(bool returnComments ) {
+	_pContext->_returnComment = returnComments;
+}
+
 // Read configuration from file and intialize the configure items
 void Toker::applyConfig() {
 	std::string fileSpec = "token_config.txt";
@@ -534,7 +549,9 @@ bool Toker::attach(std::istream* pIn)
 	}
 	return false;
 }
-
+int Toker::getCurrentLineNumber() {
+	return _pContext->lineNumber;
+}
 // function to get token, this function will return a token every time it is invoked.
 //----< this method will be called by SemiExpression >---------------
 Token Toker::getTok()

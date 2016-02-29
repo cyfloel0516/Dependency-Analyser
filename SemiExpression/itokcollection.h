@@ -32,7 +32,12 @@ namespace Scanner {
 		virtual void trimFront() = 0;
 		virtual void clear() = 0;
 		virtual std::string show(bool showNewLines = false) = 0;
+		virtual bool isComment(const Scanner::Token& tok) = 0;
 		virtual ~ITokCollection() {};
+
+		virtual void returnNewline(bool returnNewline = false) = 0;
+		virtual void returnComment(bool returnComment = false) = 0;
+		virtual std::string toString() = 0;
 	};
 
 }

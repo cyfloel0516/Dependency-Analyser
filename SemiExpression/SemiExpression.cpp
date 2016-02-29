@@ -7,7 +7,7 @@
 * Source: Jim Fawcett, Syracuse University, CST 4-187
 */
 
-#include <fstream>
+#include <fstream>`
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -22,6 +22,10 @@ using namespace Scanner;
 using namespace utils;
 
 // Constructor
+SemiExpression::SemiExpression(){
+	applyConfig();
+}
+
 SemiExpression::SemiExpression(Toker* pToker) : _pToker(pToker) {
 	applyConfig();
 }
@@ -37,8 +41,19 @@ bool SemiExpression::ifToStopCollect(const Token& token) {
 		stop = true;
 	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "}")
 		stop = true;
-	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "#" && token.tokenIndex == 0) {
-		stop = true;
+	else if (tokenType == TOKEN_TYPES::NEWLINE && _tokens.size() > 1 ) {
+		bool first = true;
+		for (int i = 0; i < _tokens.size(); i++) {
+			if (_tokens[i].tokenType == TOKEN_TYPES::NEWLINE) 
+				continue;
+			else if (_tokens[i].tokenType != TOKEN_TYPES::NEWLINE && _tokens[i].tokenValue == "#" && _tokens[i].tokenType == TOKEN_TYPES::PUNCTUATOR) {
+				stop = true;
+				break;
+			}
+			else {
+				break;
+			}
+		}
 	}
 	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == ":"
 		&& _tokens.back().tokenType == TOKEN_TYPES::ALPHANUM
@@ -48,113 +63,38 @@ bool SemiExpression::ifToStopCollect(const Token& token) {
 	return stop;
 }
 
-// Go through all ignore sequence and find a match one
-// Return:
-//    bool: if there is a ignore sequence match current tokens
-bool SemiExpression::setCurrentSequence(const Token& token) {
-	size_t tokenIndex = 0;
-	bool findOne = false;
-	for (tokenIndex; tokenIndex < _tokens.size(); tokenIndex++) {
-		//Check sequence
-		if (sequenceIndex != -1 && ignoreIndex == ignoreSequences[sequenceIndex].size())
-			break;
+// Tell if a token is a comment
+bool SemiExpression::isComment(const Scanner::Token& tok)
+{
+	return tok.tokenType == TOKEN_TYPES::CPPCOMMENT || tok.tokenType == TOKEN_TYPES::CCOMMENT;
+}
 
-		if (sequenceIndex != -1) {
-			if (ignoreSequences[sequenceIndex][ignoreIndex] == _tokens[tokenIndex].tokenValue) {
-				ignoreIndex++;
-				findOne = true;
-			}
+bool SemiExpression::isForLoop()
+{
+	size_t forIndex = find("for");
+	size_t openParenIndex = find("(");
+	if (forIndex < _tokens.size() 
+		&& _tokens[forIndex].tokenType == TOKEN_TYPES::ALPHANUM
+		&& openParenIndex < _tokens.size()
+		&& _tokens[_tokens.size() - 1].tokenType == TOKEN_TYPES::PUNCTUATOR 
+		&& _tokens[_tokens.size() - 1].tokenValue == ";") {
+		//second colon
+		collect(false);
+		if (_tokens[_tokens.size() - 1].tokenType == TOKEN_TYPES::PUNCTUATOR && _tokens[_tokens.size() - 1].tokenValue == ";") {}
+		else {
+			return false;
+		}
+		//next terminator
+		collect(false);
+		size_t closeParenPosition = find(")");
+		if (closeParenPosition >= _tokens.size()) {
+			return true;
 		}
 		else {
-			for (auto seq : ignoreSequences) {
-				sequenceIndex++;
-				if (seq[0] == _tokens[tokenIndex].tokenValue) {
-					ignoreIndex = 1;
-					findOne = true;
-				}
-			}
-			if (!findOne) {
-				sequenceIndex = -1;
-			}
+			return false;
 		}
-	}
-
-	return findOne;
-}
-
-// To merge current buffer queue and then return and set as one token collection
-void SemiExpression::mergeBufferThenOutput(bool lastCharInSequence) {
-	if (!lastCharInSequence) {
-		auto temp = std::vector<Token>();
-		while (!tokenBuffer.empty()) {
-			auto buffer = tokenBuffer.front();
-			tokenBuffer.pop();
-			for (auto tok : buffer) {
-				temp.push_back(tok);
-			}
-		}
-		for (auto tok : _tokens) {
-			temp.push_back(tok);
-		}
-		_tokens = temp;
-	}
-	else {
-		popQueue = true;
-		auto temp = tokenBuffer.front();
-		tokenBuffer.pop();
-		tokenBuffer.push(_tokens);
-		_tokens = temp;
-	}
-}
-
-// Popup buffer queue as many token collections
-void SemiExpression::popupBuffer() {
-	auto temp = std::vector<Token>();
-	if (!tokenBuffer.empty()) {
-		auto buffer = tokenBuffer.front();
-		tokenBuffer.pop();
-		tokenBuffer.push(_tokens);
-		_tokens = buffer;
-		popQueue = true;
-	}
-}
-
-// Process current token collection based on some status
-// Parameters:
-//    Token token: current token 
-//    bool stop: if now can stop collecting
-//    bool findOne: if there is a matched sequence
-// Return:
-//    bool: if to stop collecting
-bool SemiExpression::processCollection(const Token& token, bool stop, bool findOne) {
-	std::string tokenType = token.tokenType;
-	std::string tokenValue = token.tokenValue;
-	bool inSequence = false;	// Determine if current tokens are in a ignore sequence
-	bool endSequence = false;	// Determine if it reach the end of current ignore sequence
-	bool lastCharInSequence = false;	// Determine if the last character is in ignore sequence
-	if (sequenceIndex != -1) {
-		//It is in a sequence
-		inSequence = true;
-		endSequence = (ignoreIndex == ignoreSequences[sequenceIndex].size());
-	}
-	else {
-		endSequence = true;
-	}
-	lastCharInSequence = (sequenceIndex != -1 && tokenValue == ignoreSequences[sequenceIndex][ignoreIndex - 1] && findOne);
-
-	if (stop && endSequence && !lastCharInSequence) {
-		mergeBufferThenOutput(lastCharInSequence);
 		return true;
 	}
-	else if (stop && !endSequence && lastCharInSequence) {
-		tokenBuffer.push(_tokens);
-		_tokens.clear();
-	}
-	else if (stop && !endSequence && !lastCharInSequence) {
-		popupBuffer();
-		return true;
-	}
-
 	return false;
 }
 
@@ -167,46 +107,35 @@ bool SemiExpression::processCollection(const Token& token, bool stop, bool findO
 //    false: it is reach the end of codes
 bool SemiExpression::get(bool clear)
 {
+	bool next = collect(clear);
+
+	isForLoop();
+
+	if (!_returnNewline) {
+		removeNewline();
+	}
+
+	if (!_returnComment) {
+		removeComment();
+	}
+	return next;
+}
+
+bool SemiExpression::collect(bool clear) {
 	// Clear token collection
 	if (clear) {
 		_tokens.clear();
 	}
-	int count = 0;
-	sequenceIndex = -1;
-	ignoreIndex = -1;
+	bool forLoop = false;
 	while (true)
 	{
-		//std::cout << count++ << endl;
-		if (popQueue) {
-			if (!tokenBuffer.empty()) {
-				_tokens = tokenBuffer.front();
-				tokenBuffer.pop();
-				return true;
-			}
-			else {
-				popQueue = false;
-			}
-		}
 		Token token = _pToker->getTok();
-		std::string tokenType = token.tokenType;
-		std::string tokenValue = token.tokenValue;
-		if (tokenType.empty()) {
-			continue;
-		}
-		auto stop = ifToStopCollect(token);
-		push_back(token);
+		if (token.tokenType == TOKEN_TYPES::TERMINATED)
+			break;
+		_tokens.push_back(token);
 
-		if (stop) {
-
-			bool findOne = setCurrentSequence(token);
-			bool finish = processCollection(token, stop, findOne);
-			if (finish)
-				return true;
-		}
-		if (tokenType == TOKEN_TYPES::TERMINATED)
-		{
-			return false;
-		}
+		if (ifToStopCollect(token))
+			return true;
 	}
 	return false;
 }
@@ -231,7 +160,7 @@ size_t Scanner::SemiExpression::find(const std::string & tok)
 		}
 		count++;
 	}
-	return -1;
+	return length();
 }
 
 // Return the size of current token collection
@@ -240,16 +169,54 @@ size_t SemiExpression::length()
 	return _tokens.size();
 }
 
+std::string SemiExpression::toString() {
+	std::string result;
+	for (int i = 0; i < length(); i++) {
+		if (_tokens[i].tokenType != TOKEN_TYPES::NEWLINE) {
+			result += _tokens[i].tokenValue + " ";
+		}
+	}
+	return result;
+}
+
+void SemiExpression::returnNewline(bool returnNewline) {
+	_returnNewline = returnNewline;
+}
+
+void SemiExpression::removeNewline() {
+	for (int i = 0; i < _tokens.size();i++) {
+		if (_tokens[i].tokenType == TOKEN_TYPES::NEWLINE) {
+			_tokens.erase(_tokens.begin() + i, _tokens.begin() + i + 1);
+			i--;
+		}
+	}
+}
+
+void SemiExpression::returnComment(bool returnComment) {
+	_returnComment = returnComment;
+}
+
+void SemiExpression::removeComment() {
+	for (int i = 0; i < _tokens.size();i++) {
+		if (_tokens[i].tokenType == TOKEN_TYPES::CCOMMENT || _tokens[i].tokenType == TOKEN_TYPES::CPPCOMMENT) {
+			_tokens.erase(_tokens.begin() + i, _tokens.begin() + i + 1);
+			i--;
+		}
+	}
+}
+
 // Print out semi-expression result to command line
 // Parameters:
 //    bool showNewLines: if show new line
-std::string SemiExpression::show(bool showNewLines )
+std::string SemiExpression::show(bool showNewLines)
 {
+	std::ostringstream out;
+	out << "\n  ";
 	for (auto token : _tokens)
 		if ((token.tokenValue != "\n" && token.tokenType != TOKEN_TYPES::NEWLINE) || showNewLines)
-			std::cout << token.tokenValue << " ";
-	std::cout << "\n";
-	return std::string("");
+			out << token.tokenValue << " ";
+	out << "\n";
+	return out.str();
 }
 
 // Push a token to the end of current token collection

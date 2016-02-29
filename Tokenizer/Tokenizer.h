@@ -100,6 +100,10 @@ namespace Scanner {
 		std::vector<std::string> getSpecialSingleChars();
 		// Return current special double character
 		std::vector<std::string> getSpecialCharPairs();
+
+		void returnComments(bool returnComments = false);
+
+		int getCurrentLineNumber();
 	private:
 		ConsumeState* pConsumer;
 		Token tokens;

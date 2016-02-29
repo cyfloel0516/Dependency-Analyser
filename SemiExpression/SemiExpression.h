@@ -17,9 +17,10 @@
 
 namespace Scanner
 {
-	class SemiExpression: ITokCollection
+	class SemiExpression: public ITokCollection
 	{
 	public:
+		SemiExpression();
 		SemiExpression(Toker* pToker);
 
 		size_t length();
@@ -52,26 +53,29 @@ namespace Scanner
 		virtual std::string show(bool showNewLines = false) override;
 		// Set terminator of token collection
 		void setTerminator(std::vector<string> sequences, bool replace = false);
+		bool isComment(const Scanner::Token& tok) override;
 		// Get ignoreSequence
 		std::vector<vector<std::string>> getIgnoreSequence();
-		
+		bool isForLoop();
+		bool collect(bool clear);
+		std::string toString();
+		void returnNewline(bool returnNewline = false) ;
+		void removeNewline();
+
+		void returnComment(bool returnComment = false);
+		void removeComment();
+
 	private:
+		bool _returnNewline = false;
+		bool _returnComment = false;
 		std::vector<vector<std::string>> ignoreSequences = std::vector<std::vector<std::string>>();
 		std::vector<Token> _tokens;
 		Toker* _pToker;
 		void applyConfig();
 		std::vector<std::string> convertStringToVector(std::string s);
-		int sequenceIndex = -1;
-		int ignoreIndex = -1;
-		bool popQueue = false;
-		std::queue<std::vector<Token>> tokenBuffer = std::queue<std::vector<Token>>();
 		bool compareSequence(std::vector<string> s1, std::vector<string> s2);
 		int bufferIndex = 0;
 		bool ifToStopCollect(const Token& token);
-		bool setCurrentSequence(const Token& token);
-		void mergeBufferThenOutput(bool lastCharInSequence);
-		void popupBuffer();
-		bool processCollection(const Token& token, bool stop, bool findOne);
 	};
 }
 #endif
