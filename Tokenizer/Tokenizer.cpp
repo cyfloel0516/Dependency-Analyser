@@ -282,10 +282,10 @@ public:
 			else {
 				_pContext->token.tokenValue += _pContext->currChar;
 			}
-
+			_pContext->currChar = _pContext->_pIn->get();
 			if (!_pContext->_pIn->good())  // end of stream
 				return;
-			_pContext->currChar = _pContext->_pIn->get();
+			
 			next = _pContext->_pIn->peek();
 		} while (_pContext->currChar != '"' && _pContext->currChar != '\'');
 	}
@@ -562,9 +562,13 @@ Token Toker::getTok()
 		if (pConsumer->hasTok())
 			break;
 
-		//insurance
-		if (!pConsumer->canRead())
-			return Token();
+		////insurance
+		//if (!pConsumer->canRead())
+		//{
+		//	auto tok = Token();
+		//	tok.tokenType = TOKEN_TYPES::TERMINATED;
+		//	return tok;
+		//}
 	}
 	return pConsumer->getTok();
 }

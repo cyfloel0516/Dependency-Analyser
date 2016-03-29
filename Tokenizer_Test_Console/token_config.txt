@@ -1,2 +1,0 @@
-single_character_token = "<, >, [, ], (, ), {, }, :, =, +, -, *"
-double_character_tokens = "<<, >>, ::, ++, --, ==, +=, -=, *=, /="

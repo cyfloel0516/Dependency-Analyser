@@ -1,4 +1,0 @@
-!_pIn->good()
-a = "1234 \n newline because \\n is a special single character.";
-a = a + 1;
-b = [1]

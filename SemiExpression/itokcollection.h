@@ -10,7 +10,7 @@
 #define ITOKCOLLECTION_H
 
 
-#include "Tokenizer.h"
+#include "../Tokenizer/Tokenizer.h"
 #include <string>
 using namespace std;
 

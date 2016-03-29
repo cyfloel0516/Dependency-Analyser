@@ -7,7 +7,7 @@
 * Source: Jim Fawcett, Syracuse University, CST 4-187
 */
 
-#include <fstream>`
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -35,15 +35,14 @@ bool SemiExpression::ifToStopCollect(const Token& token) {
 	bool stop = false;
 	auto tokenType = token.tokenType;
 	auto tokenValue = token.tokenValue;
-	if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "{")
-		stop = true;
-	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == ";")
-		stop = true;
-	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "}")
+	if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "{"
+		|| tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == ";"
+		|| tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == "}"
+		)
 		stop = true;
 	else if (tokenType == TOKEN_TYPES::NEWLINE && _tokens.size() > 1 ) {
 		bool first = true;
-		for (int i = 0; i < _tokens.size(); i++) {
+		for (size_t i = 0; i < _tokens.size(); i++) {
 			if (_tokens[i].tokenType == TOKEN_TYPES::NEWLINE) 
 				continue;
 			else if (_tokens[i].tokenType != TOKEN_TYPES::NEWLINE && _tokens[i].tokenValue == "#" && _tokens[i].tokenType == TOKEN_TYPES::PUNCTUATOR) {
@@ -56,8 +55,8 @@ bool SemiExpression::ifToStopCollect(const Token& token) {
 		}
 	}
 	else if (tokenType == TOKEN_TYPES::PUNCTUATOR && tokenValue == ":"
-		&& _tokens.back().tokenType == TOKEN_TYPES::ALPHANUM
-		&& (_tokens.back().tokenValue == "private" || _tokens.back().tokenValue == "protected" || _tokens.back().tokenValue == "public")) {
+		&& _tokens[_tokens.size() - 2].tokenType == TOKEN_TYPES::ALPHANUM
+		&& (_tokens[_tokens.size() - 2].tokenValue == "private" || _tokens[_tokens.size() - 2].tokenValue == "protected" || _tokens[_tokens.size() - 2].tokenValue == "public")) {
 		stop = true;
 	}
 	return stop;
@@ -80,9 +79,8 @@ bool SemiExpression::isForLoop()
 		&& _tokens[_tokens.size() - 1].tokenValue == ";") {
 		//second colon
 		collect(false);
-		if (_tokens[_tokens.size() - 1].tokenType == TOKEN_TYPES::PUNCTUATOR && _tokens[_tokens.size() - 1].tokenValue == ";") {}
-		else {
-			return false;
+		if (!(_tokens[_tokens.size() - 1].tokenType == TOKEN_TYPES::PUNCTUATOR && _tokens[_tokens.size() - 1].tokenValue == ";")) { 
+			return false; 
 		}
 		//next terminator
 		collect(false);
@@ -171,7 +169,7 @@ size_t SemiExpression::length()
 
 std::string SemiExpression::toString() {
 	std::string result;
-	for (int i = 0; i < length(); i++) {
+	for (size_t i = 0; i < length(); i++) {
 		if (_tokens[i].tokenType != TOKEN_TYPES::NEWLINE) {
 			result += _tokens[i].tokenValue + " ";
 		}
@@ -184,7 +182,7 @@ void SemiExpression::returnNewline(bool returnNewline) {
 }
 
 void SemiExpression::removeNewline() {
-	for (int i = 0; i < _tokens.size();i++) {
+	for (size_t i = 0; i < _tokens.size();i++) {
 		if (_tokens[i].tokenType == TOKEN_TYPES::NEWLINE) {
 			_tokens.erase(_tokens.begin() + i, _tokens.begin() + i + 1);
 			i--;
@@ -197,7 +195,7 @@ void SemiExpression::returnComment(bool returnComment) {
 }
 
 void SemiExpression::removeComment() {
-	for (int i = 0; i < _tokens.size();i++) {
+	for (size_t i = 0; i < _tokens.size();i++) {
 		if (_tokens[i].tokenType == TOKEN_TYPES::CCOMMENT || _tokens[i].tokenType == TOKEN_TYPES::CPPCOMMENT) {
 			_tokens.erase(_tokens.begin() + i, _tokens.begin() + i + 1);
 			i--;

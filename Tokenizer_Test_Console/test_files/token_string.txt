@@ -1,4 +1,0 @@
-std::string doubleQuoted = "This is a double quoted string with some special chars, \" \' \" \t \n \\ /* 12345 */ //12345 \ 
-newline case";
-
-char singleQuoted = '\'';

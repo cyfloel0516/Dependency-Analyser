@@ -1,6 +1,0 @@
-a + b = 1;
-_in = nullptr;
-std::out << "1234\n";
-for(i = 0 ; i < 10; i++){
-  i = i * 2;
-}

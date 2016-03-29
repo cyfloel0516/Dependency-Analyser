@@ -1,5 +1,0 @@
-/*
-This is a comment //
-Another Line
-Third line follows by end mark*///continuous comment
-//One line comment with special character /**/ //
