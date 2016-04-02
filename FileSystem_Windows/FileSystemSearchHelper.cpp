@@ -10,6 +10,19 @@
 #include <iostream>
 #include <algorithm>
 
+std::vector<std::string> FileSystemSearchHelper::searchFiles(std::string rootPath, std::vector<std::string> patterns)
+{
+	std::vector<std::string> result;
+	
+	for (auto pat : patterns) {
+		auto tempResult = FileSystemSearchHelper::searchFiles(rootPath, pat);
+		result.reserve(result.size() + tempResult.size());
+		result.insert(result.end(), tempResult.begin(), tempResult.end());
+	}
+
+	return result;
+}
+
 std::vector<std::string> FileSystemSearchHelper::searchFiles(std::string rootPath, std::string pattern) {
 	std::vector<std::string> result;
 	auto entry = FileSystem::Path::getFullFileSpec(FileSystem::Directory::getCurrentDirectory());
@@ -44,6 +57,19 @@ std::vector<std::string> FileSystemSearchHelper::searchFiles(std::string rootPat
 	//Begin to search using lambda function
 	walkFolder(rootPath, pattern, result);
 	FileSystem::Directory::setCurrentDirectory(entry);
+	return result;
+}
+
+std::vector<std::string> FileSystemSearchHelper::searchDirectories(std::string rootPath, std::vector<std::string> patterns)
+{
+	std::vector<std::string> result;
+
+	for (auto pat : patterns) {
+		auto tempResult = FileSystemSearchHelper::searchDirectories(rootPath, pat);
+		result.reserve(result.size() + tempResult.size());
+		result.insert(result.end(), tempResult.begin(), tempResult.end());
+	}
+
 	return result;
 }
 

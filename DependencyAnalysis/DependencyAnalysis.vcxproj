@@ -150,11 +150,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TypeAnalysis.h" />
+    <ClInclude Include="TypeAnalysisHelper.h" />
     <ClInclude Include="TypeDetector.h" />
+    <ClInclude Include="TypeTable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TypeAnalysis.cpp" />
     <ClCompile Include="TypeDetector.cpp" />
+    <ClCompile Include="TypeTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AstTree\AstTree.vcxproj">

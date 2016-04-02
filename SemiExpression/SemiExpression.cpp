@@ -16,7 +16,7 @@
 #include "../Tokenizer/Tokenizer.h"
 #include "SemiExpression.h"
 #include <algorithm>
-#include "Utils.h"
+#include "../Tokenizer/Utils.h"
 
 using namespace Scanner;
 using namespace utils;

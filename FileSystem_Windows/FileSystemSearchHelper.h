@@ -20,8 +20,14 @@
 // Both will return a string vector with full path of matched item.
 class FileSystemSearchHelper {
 public:
+	// This function will accept multiple patterns and return the search results
+	static std::vector<std::string> searchFiles(std::string rootPath, std::vector<std::string> patterns);
+	
 	// This function will return a string vector with full path of matched item.
 	static std::vector<std::string> searchFiles(std::string rootPath, std::string pattern);
+
+	// This function will accept multiple patterns and return the search results
+	static std::vector<std::string> searchDirectories(std::string rootPath, std::vector<std::string> pattern);
 
 	// This function will return a string vector with full path of matched item.
 	static std::vector<std::string> searchDirectories(std::string rootPath, std::string pattern);
