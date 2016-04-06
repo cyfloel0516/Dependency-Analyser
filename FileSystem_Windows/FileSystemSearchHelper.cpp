@@ -36,6 +36,7 @@ std::vector<std::string> FileSystemSearchHelper::searchFiles(std::string rootPat
 	// This lambda is use to search folder recursively
 	walkFolder = [&](std::string root, std::string pattern, std::vector<std::string>& results) {
 		auto fullPath = FileSystem::Path::getFullFileSpec(root);
+		auto before = FileSystem::Path::getFullFileSpec(FileSystem::Directory::getCurrentDirectory());
 		FileSystem::Directory::setCurrentDirectory(fullPath);
 
 		auto files = FileSystem::Directory::getFiles(fullPath, pattern);
@@ -44,14 +45,24 @@ std::vector<std::string> FileSystemSearchHelper::searchFiles(std::string rootPat
 		});
 
 		auto directories = FileSystem::Directory::getDirectories(fullPath, "*");
+
 		auto nowPath = FileSystem::Path::getFullFileSpec(".");
 		auto parentPath = FileSystem::Path::getFullFileSpec("..");
+		for (auto dir : directories) {
+			//Need to exclude self and parent folder
+			auto path = FileSystem::Path::getFullFileSpec(dir);
+			if (path != nowPath && path != parentPath && path != root && dir.find(".") != 0)
+				walkFolder(path, pattern, results);
+		}
+		FileSystem::Directory::setCurrentDirectory(before);
+		/*
 		std::for_each(directories.begin(), directories.end(), [&](std::string& path) {
 			//Need to exclude self and parent folder
+			auto originPath = path;
 			path = FileSystem::Path::getFullFileSpec(path);
-			if (path != nowPath && path != parentPath && path != root)
+			if (path != nowPath && path != parentPath && path != root && originPath.find(".") != 0)
 				walkFolder(path, pattern, results);
-		});
+		});*/
 	};
 
 	//Begin to search using lambda function

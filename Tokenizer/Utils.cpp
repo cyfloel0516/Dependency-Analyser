@@ -8,6 +8,8 @@
 #include "Utils.h"
 #include <vector>
 #include <sstream>
+#include <windows.h>
+#include <iostream>
 
 namespace utils {
 	std::string trimL(const std::string &s) {
@@ -59,5 +61,12 @@ namespace utils {
 		copy = utils::replace(copy, "\t",  "\n");
 
 		return copy;
+	}
+	void Title(const std::string & std)
+	{
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(hConsole, 14);
+		std::cout << std << "\n";
+		SetConsoleTextAttribute(hConsole, 7);
 	}
 }

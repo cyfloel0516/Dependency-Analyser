@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ThreadHelper", "ThreadHelpe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DependencyAnalysis", "DependencyAnalysis\DependencyAnalysis.vcxproj", "{E73E709F-9584-41A7-8F34-0BB8BF25643F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ParallelDependencyExecutive", "ParallelDependencyExecutive\ParallelDependencyExecutive.vcxproj", "{8A5F974A-3FBA-494D-81E2-C176488899CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -131,6 +133,14 @@ Global
 		{E73E709F-9584-41A7-8F34-0BB8BF25643F}.Release|x64.Build.0 = Release|x64
 		{E73E709F-9584-41A7-8F34-0BB8BF25643F}.Release|x86.ActiveCfg = Release|Win32
 		{E73E709F-9584-41A7-8F34-0BB8BF25643F}.Release|x86.Build.0 = Release|Win32
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Debug|x64.ActiveCfg = Debug|x64
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Debug|x64.Build.0 = Debug|x64
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Debug|x86.ActiveCfg = Debug|Win32
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Debug|x86.Build.0 = Debug|Win32
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Release|x64.ActiveCfg = Release|x64
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Release|x64.Build.0 = Release|x64
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Release|x86.ActiveCfg = Release|Win32
+		{8A5F974A-3FBA-494D-81E2-C176488899CF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

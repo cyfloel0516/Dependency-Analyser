@@ -57,8 +57,8 @@ ASTNode* AstAnalyser::analysisFile(std::string& filePath) {
 
 		while (pParser->next())
 			pParser->parse();
-		AstAnalyser::analysis(configure.pRepo->root);
-		return configure.pRepo->root;
+		AstAnalyser::analysis(configure.pRepo->getRoot());
+		return configure.pRepo->getRoot();
 	}
 	catch (std::exception& ex)
 	{

@@ -13,6 +13,9 @@
 #include "TypeTable.h"
 #include "../Tokenizer/Utils.h"
 #include <complex>
+
+// Type detector interface
+// All detectors implement this interface and called by analyser
 class ITypeDetector {
 public:
 	virtual bool test(ASTNode*& node) = 0;
@@ -20,6 +23,7 @@ public:
 	virtual TypeDefinition getData(ASTNode*& node) = 0;
 };
 
+// Detector to find class definition
 class ClassDefinition: public ITypeDetector{
 public:
 	// Inherited via ITypeDetector
@@ -27,6 +31,7 @@ public:
 	virtual TypeDefinition getData(ASTNode*& node) override;
 };
 
+// Detector to find typedef definition
 class TypeDefDefinition : public ITypeDetector {
 public:
 	// Inherited via ITypeDetector
@@ -34,6 +39,7 @@ public:
 	virtual TypeDefinition getData(ASTNode *& node) override;
 };
 
+// Detector to find alias definition
 class AliasDefinition : public ITypeDetector {
 public:
 	// Inherited via ITypeDetector
@@ -41,6 +47,7 @@ public:
 	virtual TypeDefinition getData(ASTNode *& node) override;
 };
 
+// Detector to find global function definition
 class GlobalFunctionDefinition : public ITypeDetector {
 private:
 	bool isLambda(ASTNode *& node);

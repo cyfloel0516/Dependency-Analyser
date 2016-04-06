@@ -32,6 +32,8 @@ namespace utils {
 
 	 // Change a escaped string back to un escaped style
 	 std::string un_escape(const std::string& str);
+
+	 void Title(const std::string& std);
 }
 
 #endif

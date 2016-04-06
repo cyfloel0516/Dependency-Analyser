@@ -1,4 +1,6 @@
 #include "TypeDetector.h"
+#include "AnalysisHelper.h"
+
 // class definition detector
 bool ClassDefinition::test(ASTNode*& node)
 {
@@ -13,7 +15,13 @@ TypeDefinition ClassDefinition::getData(ASTNode*& node)
 {
 	// To get the real name of class
 	auto tokens = utils::split(node->getFullName(), ' ');
-	string realName = tokens[tokens.size() - 2];
+	auto splitIndex = 0;
+	auto colonIndex = std::find(tokens.begin(), tokens.end(), ":");
+	if (colonIndex != tokens.end())
+		splitIndex = colonIndex - tokens.begin();
+	else
+		splitIndex = tokens.size() - 1;
+	string realName = tokens[splitIndex - 1];
 	auto type = TypeDefinition(realName, node->type, "", "", node->getFullName());
 	return type;
 }
@@ -22,9 +30,15 @@ TypeDefinition ClassDefinition::getData(ASTNode*& node)
 // typedef declaration detector
 bool TypeDefDefinition::test(ASTNode *& node)
 {
-	if (node->type == "declaration" && node->name.find_first_of("typedef") == 0) {
+
+	string wholeName = node->getFullName();
+	auto tokens = utils::split(wholeName, ' ');
+
+	if (node->type == "declaration" 
+		&& std::find(tokens.begin(), tokens.end(), "typedef") == tokens.begin()) {
 		return true;
 	}
+
 	return false;
 }
 
@@ -34,13 +48,17 @@ TypeDefinition TypeDefDefinition::getData(ASTNode *& node)
 	auto wholeName = node->getFullName();
 	auto tokens = utils::split(wholeName, ' ');
 	auto realName = tokens[tokens.size() - 2];
-	auto type = TypeDefinition(realName, node->type, "", "", node->getFullName());
+	auto type = TypeDefinition(realName, "typedef", "", "", node->getFullName());
 	return type;
 }
 
 bool AliasDefinition::test(ASTNode *& node)
 {
-	if (node->type == "declaration" && node->name.find_first_of("using") == 0 && node->name.find_first_of("=") != string::npos) {
+	string wholeName = node->getFullName();
+	auto tokens = utils::split(wholeName, ' ');
+	if (node->type == "declaration" 
+		&& std::find(tokens.begin(), tokens.end(), "using") != tokens.end() 
+		&& node->name.find("=") != string::npos) {
 		return true;
 	}
 	return false;
@@ -54,7 +72,7 @@ TypeDefinition AliasDefinition::getData(ASTNode *& node)
 	
 	auto realName = *(equalIndex - 1);
 
-	auto type = TypeDefinition(realName, node->type, "", "", node->getFullName());
+	auto type = TypeDefinition(realName, "using" , "", "", node->getFullName());
 	return type;
 }
 
@@ -70,7 +88,12 @@ bool GlobalFunctionDefinition::isLambda(ASTNode *& node)
 
 bool GlobalFunctionDefinition::test(ASTNode *& node)
 {
-	if (node->type == "function" && node->parent != nullptr && node->parent->type == "namespace") {
+	string fullName = node->getFullName();
+	if (node->type == "function" &&node->parent != nullptr 
+		&& node->parent->type == "namespace" && fullName.find("::") == string::npos ) {
+		return true;
+	}
+	else if (isLambda(node)) {
 		return true;
 	}
 	return false;

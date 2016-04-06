@@ -11,13 +11,14 @@
 #include <vector>
 #include <algorithm>
 #include "TypeTable.h"
-
+#include "../Tokenizer/Utils.h"
 using namespace std;
 
+TypeDefinition::TypeDefinition(){}
+
 // Constructor without wholename parameter
-TypeDefinition::TypeDefinition(string name, string type, string nameSpace, string filePath){
-	TypeDefinition(name, type, nameSpace, filePath, "");
-}
+TypeDefinition::TypeDefinition(string name, string type, string nameSpace, string filePath):
+name(name), type(type), nameSpace(nameSpace), filePath(filePath){}
 
 // Complete constructor 
 TypeDefinition::TypeDefinition(string name, string type, string nameSpace, string filePath, string wholeName):
@@ -75,13 +76,17 @@ size_t TypeTable::Size() { return this->_typeTable.size(); }
 
 // Get the index of type definition by name, type and namespace as arguments
 size_t TypeTable::Find(std::string name, std::string type, std::string nameSpace) {
-	TypeDefinition typeDef = TypeDefinition(name, type, nameSpace, "");
-
-	auto resultIt = std::find_if(_typeTable.begin(), _typeTable.end(), [&](TypeDefinition item) {
-		return TypeTable::Equal(typeDef, item);
-	});
-	return resultIt - _typeTable.begin();
-
+	auto types = utils::split(type, ' ');
+	for (auto t : types) {
+		TypeDefinition typeDef(name, t, nameSpace, "");
+		auto resultIt = std::find_if(_typeTable.begin(), _typeTable.end(), [&](TypeDefinition item) {
+			return TypeTable::Equal(typeDef, item);
+		});
+		if (resultIt != _typeTable.end()) {
+			return resultIt - _typeTable.begin();
+		}
+	}
+	return _typeTable.size();
 }
 
 // Get the type definition by index
