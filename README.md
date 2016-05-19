@@ -1,8 +1,7 @@
 # Dependency Analyser
 
 ## Overview
-This project is for one of my master courses. It is written in C++ and can be used to analysis c++ source code, get the abstract syntax tree of the code and get the dependency between 
-each files.
+This project is for the first three project of SU_CIS687 Object Oriented Design course. It is written in C++ and can be used to analysis c++ source code, generate the abstract syntax tree of the code and get the dependency between each files.
 
 In this project, it includes codes about:
 * Design patterns(Factory, Strategy, etc..) and
